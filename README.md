@@ -230,7 +230,7 @@ cd repo
    pkg install python git
    ```
 Terus Buka Polder .git Cari File Config, Ganti Repository Oonk Dengan Repository Anda,
-Dan Polder assets/api.js Maukan USERNAME_GITHUB_ANDA/NAMA_REPO_ANDA
+Dan Polder assets/api.js Masukan USERNAME_GITHUB_ANDA/NAMA_REPO_ANDA
 Terus Git Push Dulu, Setelah Selesai Push
 
 ## Publish Repo
