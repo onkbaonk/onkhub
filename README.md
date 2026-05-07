@@ -1,4 +1,4 @@
-# Onkbaonk Hub
+# Onk Hub
 
 Static Git-Powered Blog CMS built with GitHub API, Markdown rendering, token-based publishing, and zero backend cost.
 
@@ -49,6 +49,12 @@ Project ini dibuat untuk:
 - Search post
 - About page
 
+### SEO
+- Slug article URL
+- Canonical URL
+- Meta description
+- Search engine friendly
+
 ---
 
 # Tech Stack
@@ -90,6 +96,8 @@ project/
 │   └── section-categories.html
 │
 ├── index.html
+├──  robots.txt
+├── sitemap.xml
 │
 ├── posts
 │   ├── post_1777648331660.json
@@ -97,7 +105,7 @@ project/
 │
 └── users.json
 
-5 directories, 18 files
+5 directories, 20 files
 ```
 
 ---
@@ -213,6 +221,84 @@ Tidak perlu:
 
 ---
 
+## New Updates
+
+### SEO Optimization
+- Dynamic canonical URL
+- Dynamic page title
+- Dynamic meta description
+- Slug URL support
+
+Contoh URL artikel:
+
+https://onkbaonk.github.io/onkhub/?post=sharaf-ibtida-bgn-1
+
+Benefit:
+- artikel bisa dibagikan langsung
+- Google lebih mudah indexing halaman individual
+- URL lebih clean dan SEO friendly
+
+---
+
+### Table of Contents (TOC)
+- Auto generate daftar isi dari heading markdown (`#`, `##`, `###`)
+- Floating TOC button
+- Toggle show/hide TOC
+- Responsive desktop & mobile
+- Draggable floating button
+
+Contoh markdown:
+
+```md
+# Pembuka
+## Bab 1
+### Sub Bab
+```
+
+Otomatis menghasilkan daftar isi navigasi.
+
+---
+
+### Responsive Content Rendering
+- Responsive table wrapper
+- Mobile horizontal table scroll
+- Markdown rendering via Marked.js
+- HTML fallback rendering
+
+Supported:
+- heading
+- list
+- blockquote
+- code block
+- table
+
+---
+
+### Modal Full Article Reader
+- Full article popup modal
+- No page reload
+- Smooth reading experience
+- URL tetap bisa dibagikan via slug
+
+---
+
+### Performance Optimization
+- Blog index sharding
+- Individual post sharding
+
+Structure:
+
+```bash
+blog_index.json
+posts/post_1711111111.json
+```
+
+Benefit:
+- faster load
+- scalable
+- ringan walau artikel banyak
+
+
 # Setup From Zero
 
 ---
@@ -286,8 +372,6 @@ Masukkan GitHub Token
 
 Token disimpan otomatis.
 
----
-
  
 # Markdown Support
 
@@ -359,14 +443,13 @@ Built for:
 
 # Future Roadmap
 
-- Comment system
-- Dark/Light mode
-- Table of contents
 - Syntax highlight
 - Analytics
-- Image upload
+- Image upload external CDN
 - Pagination
-- Share link
+- Sitemap.xml generator
+- RSS feed
+- Open Graph preview
 
 ---
 
@@ -404,7 +487,21 @@ MIT License
 
 ---
 
+### 📸 Screenshot Aplikasi
+<p align="center">
+<img src="assets/img/hompage.jpg" width="45%" />
+<img src="assets/img/articel.jpg" width="45%" />
+</p>
+<p align="center">
+<img src="assets/img/toc.jpg" width="45%" />
+<img src="assets/img/file1.jpg" width="45%" />
+</p>
+<p align="center">
+<img src="assets/img/file2.jpg" width="45%" />
+<img src="assets/img/file3.jpg" width="45%" />
+</p>
+
 # Author
 
-Onkbaonk Hub  
+Onk Hub  
 Built for learning, experimentation, and minimalist publishing.

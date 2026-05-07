@@ -1,9 +1,18 @@
 let EDIT_POST_ID = null;
-const availableCategories = ["Semua", "Teknologi", "Catatan", "Nahu", "Curhat", "Umum"];
+const availableCategories = ["Semua", "Fiqih", "sharaf", "Nahu", "Hadist", "Umum"];
 
 // 1. FUNGSI PEMBANTU (Helper)
 function getBlogIndexPath(year = new Date().getFullYear()) {
     return `indices/index_${year}.json`;
+}
+
+function generateSlug(title) {
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
 }
 
 // 2. REFRESH BLOG (Menggabungkan Index dari Semua Tahun)
@@ -39,7 +48,7 @@ async function refreshBlog() {
             
             return `
             <div class="glass p-3 rounded-xl hover:border-blue-500/30 transition-all relative group mb-2">
-                <div class="cursor-pointer" onclick="loadFullPost(${p.id})">
+                <div class="cursor-pointer" onclick="openPost('${p.slug || generateSlug(p.title)}', ${p.id})">
                     <h3 class="font-bold text-sm text-blue-400 pr-12 line-clamp-1"> ${cleanTitle}</h3>
                     <div class="flex justify-between mt-2 pt-2 border-t border-white/5 opacity-40 text-[8px]">
                         <span>👤 ${p.author.toUpperCase()} | 🏷 ${p.category || 'Umum'} | 📅 ${p.date}</span>
@@ -71,13 +80,14 @@ async function submitPost() {
     btn.disabled = true;
 
     const postId = Date.now();
+    const slug = generateSlug(t);
     const now = new Date();
     const year = now.getFullYear();
     const dateStr = now.toISOString().split('T')[0];
 
     try {
         // A. Simpan Detail ke posts/post_ID.json (Level 1)
-        const detailedData = { id: postId, title: t, content: c, category: cat, author: CURRENT_USER, date: dateStr, reactions: {}, comments: [] };
+        const detailedData = { id: postId, slug, title: t, content: c, category: cat, author: CURRENT_USER, date: dateStr, reactions: {}, comments: [] };
         await updateGithubFile(`posts/post_${postId}.json`, detailedData, null, `Create post ${postId}`);
 
         // B. Update Daftar Tahun (indices/years.json)
@@ -100,7 +110,7 @@ async function submitPost() {
             indexRes = { content: data.content, sha: data.sha };
         } catch (e) { indexRes = { content: [], sha: null }; }
 
-        indexRes.content.push({ id: postId, title: t, author: CURRENT_USER, category: cat, date: dateStr });
+        indexRes.content.push({ id: postId, slug, title: t, author: CURRENT_USER, category: cat, date: dateStr });
         await updateGithubFile(indexPath, indexRes.content, indexRes.sha, `Update Index ${year}`);
         
         closeModal('postModal');
@@ -126,84 +136,156 @@ async function loadFullPost(postId) {
 
     container.innerHTML = "<div class='skeleton h-32 w-full'></div>";
     titleElem.innerText = "Memuat...";
-    
-    // Reset TOC saat membuka post baru
-    if(tocBtn) tocBtn.classList.add("hidden");
-    if(tocContainer) tocContainer.classList.add("hidden");
+
+    if (tocBtn) tocBtn.classList.add("hidden");
+    if (tocContainer) {
+        tocContainer.classList.add("hidden");
+        tocContainer.innerHTML = "";
+      
+    }
 
     try {
-        // Mengambil data dari folder posts/
         const post = await getPublicFile(`posts/post_${postId}.json`);
+
         titleElem.innerText = post.title || "Tanpa Judul";
+        let canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) {
+            canonical.href = window.location.href;
+        }
+        
+        document.title = `${post.title} - NH Pancasan`;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute(
+            "content",
+            (post.content || "").replace(/[#>*`]/g, "").slice(0, 150)
+            );
+          
+        }
 
         container.innerHTML = `
             <div class="post-body text-slate-300 leading-relaxed">
                 <div class="flex items-center gap-2 mb-6 opacity-60">
-                    <span class="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded border border-blue-600/30">
+                    <span class="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-1 rounded border border-blue-600/30">
                         ${post.category || 'Umum'}
                     </span>
-                    <span class="text-[10px]">👤 @${post.author}</span>
-                    <span class="text-[10px]">📅 ${post.date}</span>
+                    <span class="text-[10px]">👤 @${post.author || "admin"}</span>
+                    <span class="text-[10px]">📅 ${post.date || "-"}</span>
                 </div>
+
                 <div id="main-post-content">
                     ${marked.parse(post.content || "")}
                 </div>
             </div>
         `;
 
-        // 1. Wrap Table untuk scroll horizontal
+        // wrap table
         container.querySelectorAll("table").forEach(table => {
             const wrapper = document.createElement("div");
-            wrapper.className = "overflow-x-auto my-4 border border-white/10 rounded-lg";
+            wrapper.className = "table-wrapper";
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
 
-        // 2. LOGIKA GENERATE TOC (Table of Contents)
-        const headings = container.querySelectorAll("h1, h2, h3");
-        
-        if (headings.length > 1 && tocBtn && tocContainer) {
+        // generate toc
+        const headings = container.querySelectorAll("h1,h2,h3");
+
+        if (headings.length > 1) {
             let tocHTML = `
                 <div class="toc-box">
-                    <h3>📑 Daftar Isi </h3>
-                    <ul>
-            `;
+                    <h3>📑 Daftar Isi</h3>
+                    <ul>`;
 
             headings.forEach((heading, index) => {
                 const id = `heading-${index}`;
                 heading.id = id;
-                const level = heading.tagName.toLowerCase(); // h1, h2, h3
+
+                const level = heading.tagName.toLowerCase();
                 const indent = level === 'h2' ? 'ml-3' : level === 'h3' ? 'ml-6' : '';
 
                 tocHTML += `
-                    <li class="${indent} mb-2 border-l border-white/5 pl-2">
-                        <a href="#${id}" class="text-slate-400 hover:text-blue-400 text-[11px] block transition-colors">
-                            • ${heading.innerText}
-                        </a>
+                    <li class="${indent} border-l border-white/5 pl-2 mb-1">
+                        <a href="#${id}" class="text-slate-400 hover:text-blue-400 text-[11px] block py-1 transition-colors">
+                        • ${heading.innerText}</a>
                     </li>
                 `;
             });
 
             tocHTML += `</ul></div>`;
-            
-            // Tampilkan tombol TOC dan isi containernya
-            tocBtn.classList.remove("hidden");
+
             tocContainer.innerHTML = tocHTML;
 
-            // Logika Klik Toggle
+            tocBtn.classList.remove("hidden");
+
             tocBtn.onclick = (e) => {
                 e.stopPropagation();
                 tocContainer.classList.toggle("hidden");
             };
         }
 
-    } catch (e) {
-        console.error(e);
+    } catch (err) {
+        console.error(err);
         titleElem.innerText = "Error";
-        container.innerHTML = "<p class='text-center opacity-30'>Gagal memuat detail postingan.</p>";
+        container.innerHTML = "Gagal memuat detail postingan.";
     }
 }
 
+const tocBtn = document.getElementById("tocToggle");
+const tocContainer = document.getElementById("tocContainer");
+
+let dragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+tocBtn.addEventListener("mousedown", startDrag);
+tocBtn.addEventListener("touchstart", startDrag);
+
+document.addEventListener("mousemove", drag);
+document.addEventListener("touchmove", drag);
+
+document.addEventListener("mouseup", stopDrag);
+document.addEventListener("touchend", stopDrag);
+
+function startDrag(e) {
+    dragging = true;
+
+    const touch = e.touches ? e.touches[0] : e;
+    const rect = tocBtn.getBoundingClientRect();
+
+    offsetX = touch.clientX - rect.left;
+    offsetY = touch.clientY - rect.top;
+
+    tocBtn.style.cursor = "grabbing";
+}
+
+function drag(e) {
+    if (!dragging) return;
+
+    const touch = e.touches ? e.touches[0] : e;
+
+    const x = touch.clientX - offsetX;
+    const y = touch.clientY - offsetY;
+
+    tocBtn.style.left = `${x}px`;
+    tocBtn.style.top = `${y}px`;
+    tocBtn.style.right = "auto";
+    tocBtn.style.bottom = "auto";
+
+    tocContainer.style.left = `${x - 240}px`;
+    tocContainer.style.top = `${y - 260}px`;
+    tocContainer.style.right = "auto";
+    tocContainer.style.bottom = "auto";
+}
+
+function stopDrag() {
+    dragging = false;
+    tocBtn.style.cursor = "grab";
+}
+
+function openPost(slug, id) {
+    history.pushState({}, '', `?post=${slug}`);
+    loadFullPost(id);
+}
 
 // 5. PREPARE EDIT (Mengambil detail dari shard)
 async function prepareEdit(postId) {
@@ -239,6 +321,7 @@ async function submitEdit() {
         const postYear = new Date(file.content.date).getFullYear(); // Ambil tahun dari data asli
 
         file.content.title = t;
+        file.content.slug = generateSlug(t);
         file.content.content = c;
         file.content.category = cat;
 
@@ -251,6 +334,7 @@ async function submitEdit() {
 
         if (idx !== -1) {
             index.content[idx].title = t;
+            index.content[idx].slug = generateSlug(t);
             index.content[idx].category = cat;
             await updateGithubFile(indexPath, index.content, index.sha, `Update Index ${postYear}`);
         }
@@ -318,6 +402,7 @@ async function refreshCategories(filter = "Semua") {
     const filterBar = document.getElementById('category-filter-bar');
     if (!filterBar) return;
 
+    // 1. Render tombol kategori
     filterBar.innerHTML = availableCategories.map(cat => `
         <button onclick="refreshCategories('${cat}')" 
             class="px-4 py-1 rounded-full text-[10px] whitespace-nowrap border ${filter === cat ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/10 text-slate-400'}">
@@ -326,6 +411,7 @@ async function refreshCategories(filter = "Semua") {
     `).join('');
 
     try {
+        // 2. Ambil semua index tahunan untuk filter
         const years = await getPublicFile('indices/years.json');
         const fetchPromises = years.map(y => getPublicFile(`indices/index_${y}.json`));
         const results = await Promise.all(fetchPromises);
@@ -337,20 +423,61 @@ async function refreshCategories(filter = "Semua") {
 
         const container = document.getElementById('category-posts');
         if (!filtered || filtered.length === 0) {
-            container.innerHTML = `<p class='text-center opacity-30 py-10 text-xs'>Tidak ada postingan.</p>`;
+            container.innerHTML = `<p class='text-center opacity-30 py-10 text-xs'>Tidak ada postingan di kategori ${filter}.</p>`;
             return;
         }
 
-        container.innerHTML = filtered.sort((a,b) => b.id - a.id).map(p => `
-            <div class="glass p-4 rounded-xl flex justify-between items-center group cursor-pointer mb-2" onclick="loadFullPost(${p.id})">
+        // 3. Render hasil filter (Menggunakan openPost agar URL berubah)
+        container.innerHTML = filtered.sort((a,b) => b.id - a.id).map(p => {
+            // Gunakan slug jika ada, jika tidak generate dari judul
+            const postSlug = p.slug || generateSlug(p.title);
+            
+            return `
+            <div class="glass p-4 rounded-xl flex justify-between items-center group cursor-pointer mb-2" 
+                 onclick="openPost('${postSlug}', ${p.id})">
                 <div>
                     <span class="text-[8px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded mb-1 inline-block">${p.category || 'Umum'}</span>
                     <h4 class="font-bold text-sm text-slate-200"># ${sanitizeHTML(p.title)}</h4>
                 </div>
                 <div class="text-blue-500">→</div>
-            </div>`).join('');
-    } catch (e) { console.error(e); }
+            </div>`;
+        }).join('');
+    } catch (e) { 
+        console.error("Gagal memuat kategori:", e); 
+    }
 }
+
+
+async function checkUrlPost() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('post');
+
+    if (!slug) return;
+
+    try {
+        const years = await getPublicFile('indices/years.json');
+        const fetchPromises = years.map(y =>
+            getPublicFile(`indices/index_${y}.json`)
+        );
+
+        const results = await Promise.all(fetchPromises);
+
+        let allPosts = [];
+        results.forEach(c => allPosts = allPosts.concat(c));
+
+        const found = allPosts.find(
+            p => (p.slug || generateSlug(p.title)) === slug
+        );
+
+        if (found) {
+            loadFullPost(found.id);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+checkUrlPost();
 
 //11. open
 function openPostEditor() {
@@ -359,4 +486,3 @@ function openPostEditor() {
         openModal('postModal');
     } catch(e) {}
 }
-
