@@ -125,44 +125,43 @@ async function submitPost() {
     }
 }
 
-// 4. LOAD FULL POST (Mendukung Sharding & TOC)
+// LOAD FULL POST + SEO + TOC + DOWNLOAD + SHARE
 async function loadFullPost(postId) {
     openModal('viewModal');
 
     const container = document.getElementById('viewContent');
     const titleElem = document.getElementById('viewTitle');
-    const tocBtn = document.getElementById("tocToggle");
-    const tocContainer = document.getElementById("tocContainer");
+    const fab = document.getElementById("floatingAction");
 
     container.innerHTML = "<div class='skeleton h-32 w-full'></div>";
     titleElem.innerText = "Memuat...";
 
-    if (tocBtn) tocBtn.classList.add("hidden");
-    if (tocContainer) {
-        tocContainer.classList.add("hidden");
-        tocContainer.innerHTML = "";
-      
-    }
+    fab.classList.add("hidden");
+    document.querySelectorAll('.fab-popup').forEach(p => p.classList.add('hidden'));
 
     try {
         const post = await getPublicFile(`posts/post_${postId}.json`);
 
+        // title
         titleElem.innerText = post.title || "Tanpa Judul";
-        let canonical = document.querySelector('link[rel="canonical"]');
-        if (canonical) {
-            canonical.href = window.location.href;
-        }
-        
+
+        // SEO
         document.title = `${post.title} - NH Pancasan`;
+
         const metaDesc = document.querySelector('meta[name="description"]');
         if (metaDesc) {
-          metaDesc.setAttribute(
-            "content",
-            (post.content || "").replace(/[#>*`]/g, "").slice(0, 150)
+            metaDesc.setAttribute(
+                "content",
+                (post.content || "")
+                .replace(/[#>*`]/g, "")
+                .slice(0, 150)
             );
-          
         }
 
+        const canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) canonical.href = window.location.href;
+
+        // render content
         container.innerHTML = `
             <div class="post-body text-slate-300 leading-relaxed">
                 <div class="flex items-center gap-2 mb-6 opacity-60">
@@ -179,7 +178,7 @@ async function loadFullPost(postId) {
             </div>
         `;
 
-        // wrap table
+        // table wrapper
         container.querySelectorAll("table").forEach(table => {
             const wrapper = document.createElement("div");
             wrapper.className = "table-wrapper";
@@ -187,41 +186,90 @@ async function loadFullPost(postId) {
             wrapper.appendChild(table);
         });
 
-        // generate toc
+        // TOC
         const headings = container.querySelectorAll("h1,h2,h3");
 
         if (headings.length > 1) {
             let tocHTML = `
-                <div class="toc-box">
-                    <h3>📑 Daftar Isi</h3>
-                    <ul>`;
+                <div class="popup-title">📑 Daftar Isi</div>
+                <ul class="max-h-[50vh] overflow-y-auto">
+            `;
 
             headings.forEach((heading, index) => {
                 const id = `heading-${index}`;
                 heading.id = id;
 
-                const level = heading.tagName.toLowerCase();
-                const indent = level === 'h2' ? 'ml-3' : level === 'h3' ? 'ml-6' : '';
+                const indent =
+                    heading.tagName === "H2" ? "ml-3" :
+                    heading.tagName === "H3" ? "ml-6" : "";
 
                 tocHTML += `
-                    <li class="${indent} border-l border-white/5 pl-2 mb-1">
-                        <a href="#${id}" class="text-slate-400 hover:text-blue-400 text-[11px] block py-1 transition-colors">
-                        • ${heading.innerText}</a>
+                    <li class="${indent} mb-2">
+                        <a href="#${id}" class="text-slate-400 text-[11px] hover:text-blue-400">
+                            • ${heading.innerText}
+                        </a>
                     </li>
                 `;
             });
 
-            tocHTML += `</ul></div>`;
-
-            tocContainer.innerHTML = tocHTML;
-
-            tocBtn.classList.remove("hidden");
-
-            tocBtn.onclick = (e) => {
-                e.stopPropagation();
-                tocContainer.classList.toggle("hidden");
-            };
+            tocHTML += `</ul>`;
+            document.getElementById("tocContainer").innerHTML = tocHTML;
         }
+
+        fab.classList.remove("hidden");
+
+        // TOC button
+        document.getElementById('btnToc').onclick = (e) => {
+            e.stopPropagation();
+            toggleFabPopup('tocPopup');
+        };
+
+        // SHARE native android
+        document.getElementById('btnShare').onclick = async (e) => {
+            e.stopPropagation();
+
+            try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: post.title || document.title,
+                        text: `Baca artikel: ${post.title}`,
+                        url: window.location.href
+                    });
+                } else {
+                    await navigator.clipboard.writeText(window.location.href);
+                    alert("Link disalin!");
+                }
+            } catch (err) {
+                console.log("Share dibatalkan");
+            }
+        };
+
+        // DOWNLOAD popup
+        document.getElementById('btnDownload').onclick = (e) => {
+            e.stopPropagation();
+            toggleFabPopup('downloadPopup');
+        };
+
+        const fileName = post.slug || generateSlug(post.title);
+
+        document.getElementById('dlMd').onclick = () => {
+            executeDownload(post.content, `${fileName}.md`);
+        };
+
+        document.getElementById('dlHtml').onclick = () => {
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${post.title}</title>
+</head>
+<body>
+${marked.parse(post.content)}
+</body>
+</html>`;
+            executeDownload(htmlContent, `${fileName}.html`);
+        };
 
     } catch (err) {
         console.error(err);
@@ -230,58 +278,36 @@ async function loadFullPost(postId) {
     }
 }
 
-const tocBtn = document.getElementById("tocToggle");
-const tocContainer = document.getElementById("tocContainer");
 
-let dragging = false;
-let offsetX = 0;
-let offsetY = 0;
+// download helper
+function executeDownload(content, filename) {
+    const blob = new Blob([content], {
+        type: "text/plain;charset=utf-8"
+    });
 
-tocBtn.addEventListener("mousedown", startDrag);
-tocBtn.addEventListener("touchstart", startDrag);
+    const url = URL.createObjectURL(blob);
 
-document.addEventListener("mousemove", drag);
-document.addEventListener("touchmove", drag);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
 
-document.addEventListener("mouseup", stopDrag);
-document.addEventListener("touchend", stopDrag);
-
-function startDrag(e) {
-    dragging = true;
-
-    const touch = e.touches ? e.touches[0] : e;
-    const rect = tocBtn.getBoundingClientRect();
-
-    offsetX = touch.clientX - rect.left;
-    offsetY = touch.clientY - rect.top;
-
-    tocBtn.style.cursor = "grabbing";
+    URL.revokeObjectURL(url);
 }
 
-function drag(e) {
-    if (!dragging) return;
 
-    const touch = e.touches ? e.touches[0] : e;
+// popup toggle
+function toggleFabPopup(id) {
+    const target = document.getElementById(id);
+    const isHidden = target.classList.contains('hidden');
 
-    const x = touch.clientX - offsetX;
-    const y = touch.clientY - offsetY;
+    document.querySelectorAll('.fab-popup')
+        .forEach(p => p.classList.add('hidden'));
 
-    tocBtn.style.left = `${x}px`;
-    tocBtn.style.top = `${y}px`;
-    tocBtn.style.right = "auto";
-    tocBtn.style.bottom = "auto";
-
-    tocContainer.style.left = `${x - 240}px`;
-    tocContainer.style.top = `${y - 260}px`;
-    tocContainer.style.right = "auto";
-    tocContainer.style.bottom = "auto";
+    if (isHidden) target.classList.remove('hidden');
 }
 
-function stopDrag() {
-    dragging = false;
-    tocBtn.style.cursor = "grab";
-}
-
+// slug open
 function openPost(slug, id) {
     history.pushState({}, '', `?post=${slug}`);
     loadFullPost(id);
@@ -478,6 +504,51 @@ async function checkUrlPost() {
 }
 
 checkUrlPost();
+
+// DRAG FAB
+let isDraggingFab = false;
+let fabStartY = 0;
+let fabStartTop = 0;
+
+const fabContainer = document.getElementById("floatingAction");
+
+fabContainer.addEventListener('mousedown', startFabDrag);
+fabContainer.addEventListener('touchstart', startFabDrag, { passive: false });
+
+function startFabDrag(e) {
+    isDraggingFab = true;
+
+    const touch = e.touches ? e.touches[0] : e;
+    fabStartY = touch.clientY;
+    fabStartTop = fabContainer.offsetTop;
+}
+
+document.addEventListener('mousemove', doFabDrag);
+document.addEventListener('touchmove', doFabDrag, { passive: false });
+
+function doFabDrag(e) {
+    if (!isDraggingFab) return;
+
+    const touch = e.touches ? e.touches[0] : e;
+
+    let newTop = fabStartTop + (touch.clientY - fabStartY);
+
+    if (newTop < 50) newTop = 50;
+    if (newTop > window.innerHeight - 180) {
+        newTop = window.innerHeight - 180;
+    }
+
+    fabContainer.style.top = newTop + "px";
+    fabContainer.style.bottom = "auto";
+
+    document.querySelectorAll('.fab-popup').forEach(p => {
+        p.style.top = newTop + "px";
+        p.style.bottom = "auto";
+    });
+}
+
+document.addEventListener('mouseup', () => isDraggingFab = false);
+document.addEventListener('touchend', () => isDraggingFab = false);
 
 //11. open
 function openPostEditor() {

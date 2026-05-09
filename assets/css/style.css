@@ -163,127 +163,93 @@ button[onclick^="handleReaction"]:active {
     color: #60a5fa;
 }
 
-.table-wrapper table {
-    min-width: 100%;
-    width: max-content;
-}
+/* TABLE SCROLL SYSTEM */
 .table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     margin: 16px 0;
     width: 100%;
+    border-radius: 8px;
 }
-
-.table-wrapper::-webkit-scrollbar {
-    height: 6px;
+.table-wrapper table {
+    min-width: 100%;
+    width: max-content;
+    border-collapse: collapse;
 }
-
+.table-wrapper::-webkit-scrollbar { height: 6px; }
 .table-wrapper::-webkit-scrollbar-thumb {
     background: rgba(59,130,246,0.4);
-    border-radius: 999px;
+    border-radius: 10px; 
+  
 }
 
-.toc-box {
-    width: 85vw%;
-    max-width: 320px;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 1rem;
-    padding: 1rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+/* FAB SYSTEM */
+#floatingAction {
+    position: fixed; 
+    right: 20px; 
+    bottom: 120px;
+    z-index: 9999; 
+    display: flex; 
+    flex-direction: column; gap: 15px;
 }
-
-#tocToggle {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    z-index: 9999;
-
-    width: 58px;
-    height: 58px;
+.fab-btn {
+    background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 48px; 
+    height: 48px; 
     border-radius: 50%;
-    border: none;
-    background: #2563eb;
-    color: white;
-    font-size: 22px;
-    cursor: grab;
-
-    box-shadow: 0 8px 25px rgba(37,99,235,.35);
+    font-size: 24px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: grab; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
-
-#tocContainer {
-    position: fixed;
-    bottom: 160px;
-    right: 20px;
-    z-index: 9998;
-
-    width: 85vw;
-    max-width: 320px;
-    max-height: 60vh;
-    overflow-y: auto;
-
-    background: rgba(15,23,42,.96);
-    backdrop-filter: blur(14px);
-
-    border: 1px solid rgba(59,130,246,.2);
-    border-radius: 18px;
-    padding: 18px;
-
-    box-shadow: 0 12px 30px rgba(0,0,0,.45);
-    transition: all 0.3s ease-in-out;
+.fab-popup { 
+    position: fixed; 
+    right: 80px; 
+    bottom: 120px; 
+    z-index: 10000; 
+  
 }
-
-#tocContainer h3 {
-    color: #60a5fa;
-    font-size: 15px;
-    font-weight: bold;
-    margin-bottom: 14px;
+.fab-popup-inner {
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(59, 130, 246, 0.4); 
+    border-radius: 14px;
+    padding: 12px; 
+    min-width: 230px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
-
-#tocContainer ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.popup-title { 
+    color: #60a5fa; 
+    font-size: 11px; 
+    font-weight: bold; 
+    margin-bottom: 8px; 
+    text-transform: uppercase; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+  
 }
-
-#tocContainer li {
-    margin-bottom: 10px;
-    font-size: 13px;
+.popup-item { 
+    width: 100%; 
+    text-align: 
+    left; padding: 8px; 
+    font-size: 11px; 
+    color: #cbd5e1; 
+    border-radius: 6px; 
+    display: block; }
+.popup-item:hover { 
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa; 
+  
 }
-
-#tocContainer li.h2 {
-    padding-left: 14px;
+.popup-url { display: flex; gap: 5px; 
+  
 }
+.popup-url input { flex: 1; background: #0f172a; border: 1px solid #1e293b; padding: 5px; font-size: 10px; border-radius: 4px; color: #94a3b8; }
 
-#tocContainer li.h3 {
-    padding-left: 28px;
-}
-
-#tocContainer a {
-    color: #cbd5e1;
-    text-decoration: none;
-}
-
-#tocContainer a:hover {
-    color: #60a5fa;
-}
-
-.hidden {
-    display: none;
-}
-
-@media (min-width: 768px) {
-    #tocContainer {
-        max-width: 420px;
-        padding: 24px;
-    }
-
-    #tocToggle {
-        width: 64px;
-        height: 64px;
-        font-size: 24px;
-    }
+@media (max-width: 767px) {
+    .fab-btn { width: 42px; height: 42px; font-size: 20px; }
+    .fab-popup { right: 70px; }
 }
 
 #viewContent {
@@ -317,4 +283,45 @@ button[onclick^="handleReaction"]:active {
 @keyframes loading {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+/* semua icon global */
+.icon,
+.action-btn img,
+.action-btn svg,
+.fab-btn img,
+.fab-btn svg {
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    vertical-align: middle;
+
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* tombol */
+.action-btn,
+.fab-btn,
+.toc-toggle-btn,
+.share-toggle-btn,
+.download-toggle-btn {
+    color: #ffffff !important;
+}
+#floatingAction button img,
+#floatingAction button svg {
+    filter: brightness(0) invert(1);
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    color: currentColor;
+}
+button .icon,
+a .icon {
+    pointer-events: none;
 }
