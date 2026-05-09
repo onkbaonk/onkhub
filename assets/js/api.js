@@ -1,4 +1,4 @@
-const REPO_PATH = "USERNAME_GITHUB_ANDA/NAMA_REPO_ANDA";
+const REPO_PATH = "onkbaonk/onkhub";
 const BRANCH = "main";
 
 let GITHUB_TOKEN = localStorage.getItem("github_token") || "";
