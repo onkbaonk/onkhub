@@ -1,10 +1,11 @@
 {
     "id": 1777784036729,
     "title": "Welcome",
-    "content": "Selamat Datang\nDan Terima Kasih Sudah Menggunakan Template Ini,\nMohon Maaf Bila Banyak Kekurangan, Untuk Lebih Baik Di Kreasikan Saja.\n\nSelamat Belajar",
+    "content": "Selamat Datang\nDan Terima Kasih Sudah Menggunakan Template Ini,\nMohon Maaf Bila Banyak Kekurangan, Untuk Lebih Baik Di Kreasikan Saja.\n\nSelamat Belajar\n\nUpdate v.2.2",
     "category": "Umum",
     "author": "admin",
     "date": "2026-05-03",
     "reactions": {},
-    "comments": []
+    "comments": [],
+    "slug": "welcome"
 }
