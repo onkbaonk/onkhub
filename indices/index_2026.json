@@ -4,6 +4,7 @@
         "title": "Welcome",
         "author": "admin",
         "category": "Umum",
-        "date": "2026-05-03"
+        "date": "2026-05-03",
+        "slug": "welcome"
     }
 ]
